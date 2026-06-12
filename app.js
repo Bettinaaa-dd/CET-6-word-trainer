@@ -10,8 +10,11 @@ const elements = {
   feedback: document.querySelector("#feedback"),
   nextQuestion: document.querySelector("#nextQuestion"),
   resetPractice: document.querySelector("#resetPractice"),
+  questionCard: document.querySelector(".question-card"),
   wrongBookCount: document.querySelector("#wrongBookCount"),
-  wrongBookList: document.querySelector("#wrongBookList")
+  wrongBookList: document.querySelector("#wrongBookList"),
+  modeButtons: document.querySelectorAll("[data-mode]"),
+  difficultyButtons: document.querySelectorAll("[data-difficulty]")
 };
 
 let state = {
@@ -21,12 +24,22 @@ let state = {
   correct: 0,
   wrong: 0,
   wrongBook: [],
-  autoNextTimer: null
+  autoNextTimer: null,
+  mode: "en-to-zh",
+  difficulty: "all"
 };
 
+function getActiveWords() {
+  if (state.difficulty === "all") {
+    return WORDS;
+  }
+  return WORDS.filter((item) => item.difficulty === state.difficulty);
+}
+
 function pickRandomWord() {
-  const index = Math.floor(Math.random() * WORDS.length);
-  return WORDS[index];
+  const activeWords = getActiveWords();
+  const index = Math.floor(Math.random() * activeWords.length);
+  return activeWords[index];
 }
 
 function shuffle(items) {
@@ -39,7 +52,8 @@ function shuffle(items) {
 }
 
 function getChoiceOptions(targetWord) {
-  const distractors = WORDS
+  const sourceWords = getActiveWords().length >= 4 ? getActiveWords() : WORDS;
+  const distractors = sourceWords
     .filter((item) => item.word !== targetWord.word)
     .sort(() => Math.random() - 0.5)
     .slice(0, 3);
@@ -47,10 +61,32 @@ function getChoiceOptions(targetWord) {
   return shuffle([targetWord, ...distractors]);
 }
 
+function getQuestionText(word) {
+  return state.mode === "zh-to-en" ? word.meaning : word.word;
+}
+
+function getOptionText(word) {
+  return state.mode === "zh-to-en" ? word.word : word.meaning;
+}
+
+function getCorrectAnswerText(word) {
+  return state.mode === "zh-to-en" ? word.word : word.meaning;
+}
+
 function updateStats() {
   elements.totalCount.textContent = state.total;
   elements.correctCount.textContent = state.correct;
   elements.wrongCount.textContent = state.wrong;
+}
+
+function updateControls() {
+  elements.modeButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === state.mode);
+  });
+  elements.difficultyButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.difficulty === state.difficulty);
+  });
+  elements.questionCard.classList.toggle("meaning-mode", state.mode === "zh-to-en");
 }
 
 function setFeedback(message, type) {
@@ -112,7 +148,7 @@ function judgeAnswer(option, selectedButton) {
   } else {
     state.wrong += 1;
     addWrongWord(state.currentWord);
-    setFeedback(`回答错误，正确答案：${state.currentWord.meaning}`, "wrong");
+    setFeedback(`回答错误，正确答案：${getCorrectAnswerText(state.currentWord)}`, "wrong");
   }
 
   selectedButton.classList.add(isCorrect ? "correct" : "wrong");
@@ -132,13 +168,23 @@ function judgeAnswer(option, selectedButton) {
 
 function renderQuestion() {
   clearAutoNextTimer();
+  const activeWords = getActiveWords();
+
+  if (activeWords.length === 0) {
+    elements.questionText.textContent = "当前难度暂无词条";
+    elements.choiceArea.innerHTML = "";
+    setFeedback("请切换到其他难度。", "wrong");
+    return;
+  }
+
   state.currentWord = pickRandomWord();
   state.answered = false;
 
-  elements.questionText.textContent = state.currentWord.word;
+  elements.questionText.textContent = getQuestionText(state.currentWord);
   elements.wordIndex.textContent = `第 ${state.total + 1} 题`;
   elements.choiceArea.innerHTML = "";
   setFeedback("", "");
+  updateControls();
   updateStats();
 
   getChoiceOptions(state.currentWord).forEach((option) => {
@@ -146,7 +192,7 @@ function renderQuestion() {
     button.type = "button";
     button.className = "choice-button";
     button.dataset.word = option.word;
-    button.textContent = option.meaning;
+    button.textContent = getOptionText(option);
     button.addEventListener("click", () => {
       judgeAnswer(option, button);
     });
@@ -157,6 +203,7 @@ function renderQuestion() {
 function resetPractice() {
   clearAutoNextTimer();
   state = {
+    ...state,
     currentWord: null,
     answered: false,
     total: 0,
@@ -169,8 +216,27 @@ function resetPractice() {
   renderQuestion();
 }
 
+function setMode(mode) {
+  state.mode = mode;
+  renderQuestion();
+}
+
+function setDifficulty(difficulty) {
+  state.difficulty = difficulty;
+  renderQuestion();
+}
+
+elements.modeButtons.forEach((button) => {
+  button.addEventListener("click", () => setMode(button.dataset.mode));
+});
+
+elements.difficultyButtons.forEach((button) => {
+  button.addEventListener("click", () => setDifficulty(button.dataset.difficulty));
+});
+
 elements.nextQuestion.addEventListener("click", renderQuestion);
 elements.resetPractice.addEventListener("click", resetPractice);
 
+updateControls();
 renderWrongBook();
 renderQuestion();

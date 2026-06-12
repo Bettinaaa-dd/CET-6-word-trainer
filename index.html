@@ -12,6 +12,20 @@
       <div>
         <p class="eyebrow">CET-6 Word Trainer</p>
         <h1>六级高频词汇选择器</h1>
+        <div class="control-panel" aria-label="练习设置">
+          <div class="control-group" aria-label="模式切换">
+            <span>模式</span>
+            <button class="control-button active" type="button" data-mode="en-to-zh">英文选中文</button>
+            <button class="control-button" type="button" data-mode="zh-to-en">中文选英文</button>
+          </div>
+          <div class="control-group" aria-label="难度筛选">
+            <span>难度</span>
+            <button class="control-button active" type="button" data-difficulty="all">全部</button>
+            <button class="control-button" type="button" data-difficulty="easy">基础</button>
+            <button class="control-button" type="button" data-difficulty="medium">进阶</button>
+            <button class="control-button" type="button" data-difficulty="hard">困难</button>
+          </div>
+        </div>
       </div>
       <div class="stats" aria-label="答题统计">
         <div>
@@ -36,7 +50,7 @@
         </div>
         <h2 id="questionText">正在加载题目...</h2>
 
-        <div id="choiceArea" class="choice-grid" aria-label="中文释义选项"></div>
+        <div id="choiceArea" class="choice-grid" aria-label="答案选项"></div>
 
         <p id="feedback" class="feedback" aria-live="polite"></p>
 
